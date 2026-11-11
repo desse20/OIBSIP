@@ -8,17 +8,24 @@ import java.math.BigDecimal;
 public class Main {
 
     public static void main(String[] args) {
-        System.out.println("ATM Interface — Oasis Infobyte Task 3");
+        // Bank setup
+        Bank bank = new Bank("Oasis National Bank");
+        bank.addAccount(new Account("U001", "1234", new BigDecimal("1500.00")));
+        bank.addAccount(new Account("U002", "5678", new BigDecimal("3200.50")));
 
-        // Transaction history test
-        Account account = new Account("U001", "1234", new BigDecimal("1500.00"));
-        account.deposit(new BigDecimal("500.00"), "ATM Deposit");
-        account.withdraw(new BigDecimal("200.00"), "ATM Withdrawal");
+        // Authentication test
+        Account auth = bank.authenticate("U001", "1234");
+        System.out.println("Auth U001/1234 : " + (auth != null ? "OK" : "FAIL"));
 
-        System.out.println("--- Transaction History ---");
-        for (Transaction t : account.getTransactionHistory()) {
-            System.out.println(t);
-        }
-        System.out.printf("Balance: $%.2f%n", account.getBalance());
+        Account bad = bank.authenticate("U001", "9999");
+        System.out.println("Auth U001/9999 : " + (bad != null ? "OK" : "FAIL"));
+
+        // Transfer test
+        Bank.TransferResult result = bank.transfer(auth, "U002", new BigDecimal("300.00"));
+        System.out.println("Transfer result: " + result);
+        System.out.printf("U001 balance   : $%.2f%n", auth.getBalance());
+
+        Account u002 = bank.findAccount("U002");
+        System.out.printf("U002 balance   : $%.2f%n", u002.getBalance());
     }
 }
