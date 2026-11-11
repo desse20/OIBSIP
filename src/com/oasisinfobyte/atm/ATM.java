@@ -1,10 +1,12 @@
 package com.oasisinfobyte.atm;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Scanner;
 
 /**
  * ATM — Console interface layer.
- * Step 2: Main menu with switch-case dispatch.
+ * Step 3: Banking operations — withdraw, deposit, transfer, history.
  */
 public class ATM {
 
@@ -18,7 +20,6 @@ public class ATM {
         this.scanner = new Scanner(System.in);
     }
 
-    /** Starts the ATM session loop. */
     public void start() {
         printBanner();
 
@@ -44,7 +45,6 @@ public class ATM {
         scanner.close();
     }
 
-    /** Displays the main menu and dispatches options 1–5. */
     private void showMenu(Account account) {
         boolean sessionActive = true;
 
@@ -56,16 +56,16 @@ public class ATM {
 
             switch (input) {
                 case "1":
-                    System.out.println("  [Transaction History — to be implemented]");
+                    showHistory(account);
                     break;
                 case "2":
-                    System.out.println("  [Withdraw — to be implemented]");
+                    handleWithdraw(account);
                     break;
                 case "3":
-                    System.out.println("  [Deposit — to be implemented]");
+                    handleDeposit(account);
                     break;
                 case "4":
-                    System.out.println("  [Transfer — to be implemented]");
+                    handleTransfer(account);
                     break;
                 case "5":
                     sessionActive = false;
@@ -74,6 +74,125 @@ public class ATM {
                 default:
                     System.out.println("  [!] Invalid option. Please enter a number from 1 to 5.");
             }
+        }
+    }
+
+    private void showHistory(Account account) {
+        List<Transaction> history = account.getTransactionHistory();
+        System.out.println("  " + "=".repeat(70));
+        System.out.println("  TRANSACTION HISTORY — " + account.getUserId());
+        System.out.println("  " + "=".repeat(70));
+
+        if (history.isEmpty()) {
+            System.out.println("  No transactions found for this account.");
+        } else {
+            for (Transaction t : history) {
+                System.out.println("  " + t);
+            }
+        }
+
+        System.out.println("  " + "=".repeat(70));
+        System.out.printf("  Current balance: $ %.2f%n", account.getBalance());
+        System.out.println("  " + "=".repeat(70));
+    }
+
+    private void handleWithdraw(Account account) {
+        System.out.println("  --- WITHDRAWAL ---");
+        System.out.printf("  Available balance: $ %.2f%n", account.getBalance());
+        System.out.print("  Amount to withdraw: $ ");
+        String input = scanner.nextLine().trim();
+
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(input);
+        } catch (NumberFormatException e) {
+            System.out.println("  [!] Invalid amount.");
+            return;
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("  [!] Amount must be greater than zero.");
+            return;
+        }
+
+        if (account.getBalance().compareTo(amount) < 0) {
+            System.out.println("  [!] Insufficient Funds.");
+            return;
+        }
+
+        account.withdraw(amount, "ATM Withdrawal");
+        System.out.printf("  [✓] $ %.2f withdrawn successfully.%n", amount);
+        System.out.printf("  Remaining balance: $ %.2f%n", account.getBalance());
+    }
+
+    private void handleDeposit(Account account) {
+        System.out.println("  --- DEPOSIT ---");
+        System.out.print("  Amount to deposit: $ ");
+        String input = scanner.nextLine().trim();
+
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(input);
+        } catch (NumberFormatException e) {
+            System.out.println("  [!] Invalid amount.");
+            return;
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("  [!] Amount must be greater than zero.");
+            return;
+        }
+
+        account.deposit(amount, "ATM Deposit");
+        System.out.printf("  [✓] $ %.2f deposited successfully.%n", amount);
+        System.out.printf("  New balance: $ %.2f%n", account.getBalance());
+    }
+
+    private void handleTransfer(Account account) {
+        System.out.println("  --- TRANSFER ---");
+        System.out.printf("  Available balance: $ %.2f%n", account.getBalance());
+        System.out.print("  Recipient User ID: ");
+        String recipientId = scanner.nextLine().trim();
+
+        if (recipientId.isEmpty()) {
+            System.out.println("  [!] Recipient ID cannot be empty.");
+            return;
+        }
+
+        System.out.print("  Amount to transfer: $ ");
+        String input = scanner.nextLine().trim();
+
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(input);
+        } catch (NumberFormatException e) {
+            System.out.println("  [!] Invalid amount.");
+            return;
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("  [!] Amount must be greater than zero.");
+            return;
+        }
+
+        Bank.TransferResult result = bank.transfer(account, recipientId, amount);
+
+        switch (result) {
+            case SUCCESS:
+                System.out.printf("  [✓] $ %.2f transferred to %s successfully.%n", amount, recipientId);
+                System.out.printf("  Remaining balance: $ %.2f%n", account.getBalance());
+                break;
+            case RECIPIENT_NOT_FOUND:
+                System.out.println("  [!] Account " + recipientId + " not found.");
+                break;
+            case INSUFFICIENT_FUNDS:
+                System.out.println("  [!] Insufficient Funds.");
+                break;
+            case SELF_TRANSFER:
+                System.out.println("  [!] You cannot transfer money to your own account.");
+                break;
+            default:
+                System.out.println("  [!] Transfer failed. Please try again.");
         }
     }
 
